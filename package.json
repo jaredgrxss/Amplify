@@ -1,0 +1,43 @@
+{
+  "name": "amplify",
+  "version": "1.0.0",
+  "description": "A music discovery bot written in Typescript.",
+  "keywords": [
+    "Typescript",
+    "Discord",
+    "Bot"
+  ],
+  "homepage": "https://github.com/jaredgrxss/Amplify#readme",
+  "bugs": {
+    "url": "https://github.com/jaredgrxss/Amplify/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jaredgrxss/Amplify.git"
+  },
+  "license": "ISC",
+  "author": "Jared Gross",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/index",
+  "scripts": {
+    "build": "tsc --build",
+    "build:watch": "tsc --build --watch",
+    "format": "prettier --write \"src/**/*.{ts,js,json,md}\"",
+    "start": "node lib/index.js",
+    "dev": "tsx src/index.ts",
+    "test": "jest",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@jest/globals": "^30.0.5",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.2.0",
+    "husky": "^9.1.7",
+    "jest": "^30.0.5",
+    "prettier": "^3.6.2",
+    "ts-jest": "^29.4.1",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.2"
+  }
+}
