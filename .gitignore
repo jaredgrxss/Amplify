@@ -1,3 +1,4 @@
 node_modules
 lib/
 *-instructions.md
+.env

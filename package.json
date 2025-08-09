@@ -19,7 +19,7 @@
   "author": "Jared Gross",
   "type": "module",
   "main": "lib/index.js",
-  "types": "lib/index",
+  "types": "lib/index.d.ts",
   "scripts": {
     "build": "tsc --build",
     "build:watch": "tsc --build --watch",
@@ -27,17 +27,39 @@
     "start": "node lib/index.js",
     "dev": "tsx src/index.ts",
     "test": "jest",
-    "prepare": "husky"
+    "prepare": "husky",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json,md,css,scss,yml,yaml}": [
+      "prettier --write",
+      "eslint --fix"
+    ]
   },
   "devDependencies": {
+    "@eslint/js": "^9.33.0",
     "@jest/globals": "^30.0.5",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.2.0",
+    "@types/winston": "^2.4.4",
+    "@typescript-eslint/eslint-plugin": "^8.39.0",
+    "@typescript-eslint/parser": "^8.39.0",
+    "eslint": "^9.33.0",
+    "globals": "^16.3.0",
     "husky": "^9.1.7",
     "jest": "^30.0.5",
+    "jiti": "^2.5.1",
+    "lint-staged": "^16.1.5",
     "prettier": "^3.6.2",
     "ts-jest": "^29.4.1",
     "tsx": "^4.20.3",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.39.0"
+  },
+  "dependencies": {
+    "discord.js": "^14.21.0",
+    "dotenv": "^17.2.1",
+    "winston": "^3.17.0"
   }
 }
