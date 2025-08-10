@@ -8,6 +8,7 @@ async function execute(
 }
 
 const command: ChatCommand = {
+  cooldown: 10,
   kind: "chat",
   data: new SlashCommandBuilder()
     .setName("ping")
