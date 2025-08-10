@@ -1,1 +1,1 @@
-{"root":["./src/index.ts"],"version":"5.9.2"}
+{"root":["./src/index.ts","./src/@types/commands.ts","./src/@types/discord-augment.d.ts","./src/commands/chat-commands/ping.ts","./src/helpers/commands.ts","./src/helpers/logger.ts"],"version":"5.9.2"}
