@@ -4,7 +4,7 @@ import type { ChatCommand } from "../../@types/commands.js";
 async function execute(
   interaction: ChatInputCommandInteraction,
 ): Promise<void> {
-  await interaction.reply("Pong!");
+  await interaction.reply("Hello World");
 }
 
 const command: ChatCommand = {
