@@ -26,6 +26,7 @@
     "format": "prettier --write \"src/**/*.{ts,js,json,md}\"",
     "start": "node lib/index.js",
     "dev": "tsx src/index.ts",
+    "deploy-commands": "tsx src/scripts/deploy-commands.ts",
     "test": "jest",
     "prepare": "husky",
     "lint": "eslint . --ext .ts,.tsx",

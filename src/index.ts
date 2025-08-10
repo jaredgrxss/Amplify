@@ -17,7 +17,7 @@ try {
   attachCommands(client);
 
   client.once(Events.ClientReady, (readyClient: Client<true>) => {
-    logger.info(`Amplify bot started. Logged in as ${readyClient.user.tag}`);
+    logger.info(`Amplify started. Logged in as ${readyClient.user.tag}`);
   });
 
   client.on(Events.InteractionCreate, async (interaction) => {
