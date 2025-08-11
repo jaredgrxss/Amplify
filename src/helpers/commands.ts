@@ -1,4 +1,4 @@
-import { Client, Collection } from "discord.js";
+import { Client, Collection, Interaction, CacheType } from "discord.js";
 import { readdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -6,7 +6,7 @@ import { logger } from "./logger.js";
 import type { Dirent } from "node:fs";
 import { DiscordCommand } from "../@types/commands.js";
 
-async function attachCommands(client: Client): Promise<void> {
+async function attachCommandHandlers(client: Client): Promise<void> {
   const __filename: string = fileURLToPath(import.meta.url);
   const __dirname: string = dirname(__filename);
 
@@ -16,7 +16,9 @@ async function attachCommands(client: Client): Promise<void> {
   });
 
   // ensure that we have a valid collections map
+  // for cooldowns and commands
   client.commands = new Collection();
+  client.cooldowns = new Collection();
 
   for (const folder of commandFolders) {
     if (!folder.isDirectory()) continue;
@@ -47,4 +49,28 @@ async function attachCommands(client: Client): Promise<void> {
   }
 }
 
-export { attachCommands };
+function commandOnCooldown(
+  command: DiscordCommand,
+  interaction: Interaction<CacheType>,
+): number {
+  const cooldowns = interaction.client.cooldowns;
+  if (!cooldowns.has(command.data.name)) {
+    cooldowns.set(command.data.name, new Collection());
+  }
+  const now = Date.now();
+  const timestamps = cooldowns.get(command.data.name);
+  const defaultCooldownDuration = 3;
+  const cooldownAmount = (command.cooldown ?? defaultCooldownDuration) * 1_000;
+  if (timestamps?.has(interaction.user.id)) {
+    const expirationTime =
+      timestamps.get(interaction.user.id)! + cooldownAmount;
+    if (now < expirationTime) {
+      return Math.ceil((expirationTime - now) / 1000);
+    }
+  }
+  timestamps?.set(interaction.user.id, now);
+  setTimeout(() => timestamps?.delete(interaction.user.id), cooldownAmount);
+  return -1;
+}
+
+export { attachCommandHandlers, commandOnCooldown };
