@@ -4,7 +4,7 @@ import { readdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-async function attachEventListeners(client: Client) {
+export async function attachEventListeners(client: Client) {
   const __filename: string = fileURLToPath(import.meta.url);
   const __dirname: string = dirname(__filename);
 
@@ -26,5 +26,3 @@ async function attachEventListeners(client: Client) {
   }
   logger.info("Successfully attached event listeners to Amplify client!");
 }
-
-export { attachEventListeners };

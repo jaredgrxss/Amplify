@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from "discord.js";
-import type { ChatCommand } from "../../@types/commands.js";
+import type { SlashCommand } from "../../@types/commands.js";
 
 async function execute(
   interaction: ChatInputCommandInteraction,
@@ -7,7 +7,7 @@ async function execute(
   await interaction.reply("Hello World");
 }
 
-const command: ChatCommand = {
+export const command: SlashCommand = {
   cooldown: 10,
   kind: "chat",
   data: new SlashCommandBuilder()
@@ -15,5 +15,3 @@ const command: ChatCommand = {
     .setDescription("Replies with Pong!"),
   execute,
 };
-
-export { command };
