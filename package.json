@@ -44,6 +44,7 @@
     "@types/jest": "^30.0.0",
     "@types/node": "^24.2.0",
     "@types/winston": "^2.4.4",
+    "@types/yt-search": "^2.10.3",
     "@typescript-eslint/eslint-plugin": "^8.39.0",
     "@typescript-eslint/parser": "^8.39.0",
     "eslint": "^9.33.0",
@@ -59,8 +60,12 @@
     "typescript-eslint": "^8.39.0"
   },
   "dependencies": {
+    "@discordjs/voice": "^0.18.0",
+    "@distube/ytdl-core": "^4.16.12",
     "discord.js": "^14.21.0",
     "dotenv": "^17.2.1",
-    "winston": "^3.17.0"
+    "openai": "^5.12.2",
+    "winston": "^3.17.0",
+    "yt-search": "^2.13.1"
   }
 }

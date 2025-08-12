@@ -10,10 +10,8 @@ const consoleFormat = winston.format.combine(
   ),
 );
 
-const logger = winston.createLogger({
+export const logger = winston.createLogger({
   level: logLevel,
   format: winston.format.json(),
   transports: [new winston.transports.Console({ format: consoleFormat })],
 });
-
-export { logger };

@@ -6,7 +6,7 @@ import { logger } from "./logger.js";
 import type { Dirent } from "node:fs";
 import { DiscordCommand } from "../@types/commands.js";
 
-async function attachCommandHandlers(client: Client): Promise<void> {
+export async function attachCommandHandlers(client: Client): Promise<void> {
   const __filename: string = fileURLToPath(import.meta.url);
   const __dirname: string = dirname(__filename);
 
@@ -47,9 +47,10 @@ async function attachCommandHandlers(client: Client): Promise<void> {
       }
     }
   }
+  logger.info("Successfully attached command handlers to Amplify client!");
 }
 
-function commandOnCooldown(
+export function commandOnCooldown(
   command: DiscordCommand,
   interaction: Interaction<CacheType>,
 ): number {
@@ -72,5 +73,3 @@ function commandOnCooldown(
   setTimeout(() => timestamps?.delete(interaction.user.id), cooldownAmount);
   return -1;
 }
-
-export { attachCommandHandlers, commandOnCooldown };
