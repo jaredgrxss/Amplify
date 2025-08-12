@@ -3,6 +3,7 @@ import type { SlashCommand } from "../../@types/commands.js";
 import { logger } from "../../helpers/logger.js";
 import { getSongByGenre } from "../../helpers/open-ai.js";
 import { SongPick } from "../../@types/open-ai.js";
+import { playSongFromYoutube } from "../../helpers/youtube.js";
 
 async function execute(
   interaction: ChatInputCommandInteraction,
@@ -13,8 +14,13 @@ async function execute(
       interaction.options.getString("genre")!,
     );
     await interaction.editReply(
-      `Here are some nice songs for you to pick from ${songs}`,
+      `Here are some nice songs for you to pick from\n${songs[0]?.title} - ${songs[0]?.artist} (${songs[0]?.year})\n${songs[1]?.title} - ${songs[1]?.artist} (${songs[1]?.year})\n${songs[2]?.title} - ${songs[2]?.artist} (${songs[2]?.year})\n`,
     );
+    const randomIndex = Math.floor(Math.random() * songs.length);
+    const pickedSong = songs[randomIndex]!;
+
+    const playResult = await playSongFromYoutube(interaction, pickedSong);
+    await interaction.followUp(playResult);
   } catch (err) {
     logger.error(`Error in execute function for command [RANDOM]: ${err}`);
     await interaction.editReply({
@@ -40,6 +46,10 @@ export const command: SlashCommand = {
           { name: "R&B", value: "R&B" },
           { name: "Country", value: "Country" },
           { name: "Rap", value: "Rap" },
+          { name: "Afrobeats", value: "Afrobeats" },
+          { name: "Pop", value: "Pop" },
+          { name: "Indie Pop", value: "Indie Pop" },
+          { name: "Early 2000s Country", value: "Early 2000s Country" },
         ),
     ),
   execute,

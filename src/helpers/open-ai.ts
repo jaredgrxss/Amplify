@@ -16,7 +16,7 @@ export async function getSongByGenre(genre: string): Promise<SongPick[]> {
             artist: { type: "string" },
             year: { type: "number" },
           },
-          required: ["title", "artist"],
+          required: ["title", "artist", "year"],
           additionalProperties: false,
         },
         minItems: 1,
@@ -37,7 +37,7 @@ export async function getSongByGenre(genre: string): Promise<SongPick[]> {
       },
       {
         role: "user",
-        content: `Give me 1–3 amazing ${genre} songs as JSON under 'picks'.`,
+        content: `Give me 3 amazing ${genre} songs as JSON under 'picks'. Stay in songs that were released in the last 5 years.`,
       },
     ],
     response_format: {
@@ -48,4 +48,11 @@ export async function getSongByGenre(genre: string): Promise<SongPick[]> {
 
   const json = JSON.parse(res.choices[0]?.message.content || "{}");
   return json.picks as SongPick[];
+}
+
+export async function getPlaylistsByVibe(vibe: string): Promise<SongPick[]> {
+  console.log(vibe);
+  return [
+    { artist: "something", title: "something", year: 2000 },
+  ] as SongPick[];
 }
