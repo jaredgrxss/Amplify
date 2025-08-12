@@ -47,6 +47,7 @@ export async function attachCommandHandlers(client: Client): Promise<void> {
       }
     }
   }
+  logger.info("Successfully attached command handlers to Amplify client!");
 }
 
 export function commandOnCooldown(

@@ -13,14 +13,12 @@ async function execute(
     const songs: SongPick[] = await getSongByGenre(
       interaction.options.getString("genre")!,
     );
-    await interaction.editReply(
-      `Here are some nice songs for you to pick from\n${songs[0]?.title} - ${songs[0]?.artist} (${songs[0]?.year})\n${songs[1]?.title} - ${songs[1]?.artist} (${songs[1]?.year})\n${songs[2]?.title} - ${songs[2]?.artist} (${songs[2]?.year})\n`,
-    );
+
     const randomIndex = Math.floor(Math.random() * songs.length);
     const pickedSong = songs[randomIndex]!;
 
     const playResult = await playSongFromYoutube(interaction, pickedSong);
-    await interaction.followUp(playResult);
+    await interaction.editReply(playResult);
   } catch (err) {
     logger.error(`Error in execute function for command [RANDOM]: ${err}`);
     await interaction.editReply({

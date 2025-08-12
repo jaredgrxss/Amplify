@@ -37,7 +37,7 @@ export async function getSongByGenre(genre: string): Promise<SongPick[]> {
       },
       {
         role: "user",
-        content: `Give me 3 amazing ${genre} songs as JSON under 'picks'. Stay in songs that were released in the last 5 years.`,
+        content: `Give me 3 amazing songs from the genre ${genre} as JSON under 'picks'. Try to stay in songs that were released in the last 5 years unless the genre specifically has a year attached to it.`,
       },
     ],
     response_format: {

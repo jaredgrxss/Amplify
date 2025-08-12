@@ -26,7 +26,9 @@ if (!process.env.DISCORD_TOKEN) {
 }
 
 try {
-  const client: Client = new Client({ intents: [GatewayIntentBits.Guilds] });
+  const client: Client = new Client({
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],
+  });
   await attachCommandHandlers(client);
   await attachEventListeners(client);
   client.login(process.env.DISCORD_TOKEN);
