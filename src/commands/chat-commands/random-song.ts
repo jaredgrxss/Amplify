@@ -10,15 +10,15 @@ import type { SlashCommand } from "../../@types/commands.js";
 import { logger } from "../../helpers/logger.js";
 import { getSongByGenre } from "../../helpers/open-ai.js";
 import { SongPick } from "../../@types/open-ai.js";
-import { playSongFromYoutube } from "../../helpers/youtube.js";
+import { playSongFromYoutube } from "../../helpers/playback.js";
 
 async function execute(
-  interaction: ChatInputCommandInteraction,
+  interaction: ChatInputCommandInteraction
 ): Promise<void> {
   try {
     await interaction.deferReply();
     const songs: SongPick[] = await getSongByGenre(
-      interaction.options.getString("genre")!,
+      interaction.options.getString("genre")!
     );
 
     const randomIndex = Math.floor(Math.random() * songs.length);
@@ -49,7 +49,7 @@ async function execute(
       new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
         remove,
         pause,
-        play,
+        play
       );
     await interaction.editReply({
       content: playResult,
@@ -69,7 +69,7 @@ export const command: SlashCommand = {
   data: new SlashCommandBuilder()
     .setName("random")
     .setDescription(
-      "Play's a song from a certain genre chosen by Amplify (at random)!",
+      "Play's a song from a certain genre chosen by Amplify (at random)!"
     )
     .addStringOption((option) =>
       option
@@ -90,8 +90,8 @@ export const command: SlashCommand = {
           { name: "Alternative Rock", value: "Alternative Rock" },
           { name: "Funk", value: "Funk" },
           { name: "Lo-fi Hip Hop", value: "Lo-fi Hip Hop" },
-          { name: "Classic Soul", value: "Classic Soul" },
-        ),
+          { name: "Classic Soul", value: "Classic Soul" }
+        )
     ),
   execute,
 };

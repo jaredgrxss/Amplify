@@ -5,7 +5,7 @@ import {
   pausePlayback,
   resumePlayback,
   removePlayback,
-} from "../helpers/youtube.js";
+} from "../helpers/playback.js";
 
 const interactionCreateEvent = {
   name: Events.InteractionCreate,
@@ -13,11 +13,11 @@ const interactionCreateEvent = {
     try {
       if (interaction.isChatInputCommand()) {
         const command = interaction.client.commands.get(
-          interaction.commandName,
+          interaction.commandName
         );
         if (!command) {
           logger.error(
-            `No command matching ${interaction.commandName} was found.`,
+            `No command matching ${interaction.commandName} was found.`
           );
           return;
         }
