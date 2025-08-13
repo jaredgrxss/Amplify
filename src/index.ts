@@ -18,6 +18,8 @@ try {
 
 dotenv.config({ path: ".env" });
 
+logger.info("Successfully loaded .envs into the process!");
+
 if (!process.env.DISCORD_TOKEN) {
   logger.error(
     "DISCORD_TOKEN environment variable not set. This is required to run Amplify successfully",

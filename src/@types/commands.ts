@@ -7,15 +7,13 @@ import type {
 } from "discord.js";
 
 type Handler<I> = (interaction: I) => Promise<void>;
-type Kind = "chat" | "button" | "select" | "modal";
 
 type SlashCommandData =
   | SlashCommandBuilder
   | SlashCommandOptionsOnlyBuilder
   | SlashCommandSubcommandsOnlyBuilder;
 
-export type Command<I, D, K extends Kind, C = number> = {
-  kind: K;
+export type Command<I, D, C = number> = {
   data: D;
   execute: Handler<I>;
   cooldown: C; // seconds
@@ -24,10 +22,7 @@ export type Command<I, D, K extends Kind, C = number> = {
 export type SlashCommand = Command<
   ChatInputCommandInteraction,
   SlashCommandData,
-  "chat",
   number
 >;
-
-export type DiscordCommand = SlashCommand;
 
 export type CommandCooldowns = Collection<string, Collection<string, number>>;
