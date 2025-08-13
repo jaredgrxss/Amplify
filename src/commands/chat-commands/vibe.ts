@@ -1,24 +1,20 @@
-import {
-  SlashCommandBuilder,
-  ChatInputCommandInteraction,
-  ButtonBuilder,
-  ButtonStyle,
-  ActionRowBuilder,
-  MessageActionRowComponentBuilder,
-} from "discord.js";
+import { SlashCommandBuilder, ChatInputCommandInteraction } from "discord.js";
 import type { SlashCommand } from "../../@types/commands.js";
 import { logger } from "../../helpers/logger.js";
 import { getPlaylistsByVibe } from "../../helpers/open-ai.js";
 import { SongPick } from "../../@types/open-ai.js";
-import { playSongFromYoutube } from "../../helpers/playback.js";
+// import { playSongFromYoutube } from "../../helpers/playback.js";
 
 async function execute(
-  interaction: ChatInputCommandInteraction
+  interaction: ChatInputCommandInteraction,
 ): Promise<void> {
   try {
     await interaction.deferReply();
     const songs: SongPick[] = await getPlaylistsByVibe(
-      interaction.options.getString("vibe")!
+      interaction.options.getString("vibe")!,
+    );
+    logger.info(
+      `The songs we picked are ${songs.map((song) => song.title).join(", ")}`,
     );
   } catch (err) {
     logger.error(`Error in execute function for command [VIBE]: ${err}`);
@@ -34,16 +30,16 @@ export const command: SlashCommand = {
   data: new SlashCommandBuilder()
     .setName("vibe")
     .setDescription(
-      "Generates a curated playlist to listen to based on the desired vibe."
+      "Generates a curated playlist to listen to based on the desired vibe.",
     )
     .addStringOption((option) =>
       option
         .setName("vibe")
         .setDescription(
-          "Give a brief description of the vibe you are going for."
+          "Give a brief description of the vibe you are going for.",
         )
         .setRequired(true)
-        .setMaxLength(200)
+        .setMaxLength(200),
     ),
   execute,
 };
