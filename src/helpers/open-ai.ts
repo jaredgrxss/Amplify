@@ -45,7 +45,7 @@ export async function getSongByGenre(genre: string): Promise<SongPick[]> {
       },
       {
         role: "user",
-        content: `Select songs for genre: "${genre}. Avoid any in the exlcusions provided next.`,
+        content: `Select songs for genre: "${genre}. Avoid any in the exclusions provided next.`,
       },
       {
         role: "user",
