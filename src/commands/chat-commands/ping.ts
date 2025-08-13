@@ -9,7 +9,6 @@ async function execute(
 
 export const command: SlashCommand = {
   cooldown: 10,
-  kind: "chat",
   data: new SlashCommandBuilder()
     .setName("ping")
     .setDescription("Replies with Pong!"),

@@ -1,10 +1,10 @@
 import "discord.js";
 import type { Collection } from "discord.js";
-import type { DiscordCommand, CommandCooldowns } from "./commands.ts";
+import type { CommandCooldowns, SlashCommand } from "./commands.ts";
 
 declare module "discord.js" {
   interface Client {
-    commands: Collection<string, DiscordCommand>;
+    commands: Collection<string, SlashCommand>;
     cooldowns: CommandCooldowns;
   }
 }

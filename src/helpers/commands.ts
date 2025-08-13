@@ -1,10 +1,17 @@
-import { Client, Collection, Interaction, CacheType } from "discord.js";
+import {
+  Client,
+  Collection,
+  Interaction,
+  CacheType,
+  ChatInputCommandInteraction,
+  MessageFlags,
+} from "discord.js";
 import { readdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { logger } from "./logger.js";
 import type { Dirent } from "node:fs";
-import { DiscordCommand } from "../@types/commands.js";
+import { SlashCommand } from "../@types/commands.js";
 
 export async function attachCommandHandlers(client: Client): Promise<void> {
   const __filename: string = fileURLToPath(import.meta.url);
@@ -37,7 +44,7 @@ export async function attachCommandHandlers(client: Client): Promise<void> {
       const fileUrl: string = pathToFileURL(filePath).href;
 
       const mod = await import(fileUrl);
-      const command: DiscordCommand = mod.command;
+      const command: SlashCommand = mod.command;
       if (command && "data" in command && "execute" in command) {
         client.commands.set(command.data.name, command);
       } else {
@@ -51,7 +58,7 @@ export async function attachCommandHandlers(client: Client): Promise<void> {
 }
 
 export function commandOnCooldown(
-  command: DiscordCommand,
+  command: SlashCommand,
   interaction: Interaction<CacheType>,
 ): number {
   const cooldowns = interaction.client.cooldowns;
@@ -72,4 +79,26 @@ export function commandOnCooldown(
   timestamps?.set(interaction.user.id, now);
   setTimeout(() => timestamps?.delete(interaction.user.id), cooldownAmount);
   return -1;
+}
+
+export async function handleCommandInteraction(
+  interaction: ChatInputCommandInteraction<CacheType>,
+) {
+  const command = interaction.client.commands.get(interaction.commandName);
+  if (!command) {
+    logger.error(`No command matching ${interaction.commandName} was found.`);
+    return;
+  }
+  const cooldown = commandOnCooldown(command, interaction);
+  if (cooldown !== -1) {
+    if (!interaction.isRepliable()) return;
+    else {
+      await interaction.reply({
+        content: `This command is on cooldown for you, wait ${cooldown} seconds`,
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+  }
+  await command.execute(interaction);
 }

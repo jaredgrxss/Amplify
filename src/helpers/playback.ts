@@ -24,6 +24,10 @@ interface PlaybackSession {
   player: AudioPlayer;
   guildId: string;
   connection: VoiceConnection;
+  songInfo: {
+    title: string;
+    artist: string;
+  };
 }
 
 const sessions = new Map<string, PlaybackSession>();
@@ -40,7 +44,9 @@ export function pausePlayback(guildId: string): string {
   if (s.player.state.status !== AudioPlayerStatus.Playing)
     return "Not currently playing.";
   const ok = s.player.pause(true);
-  return ok ? "Paused." : "Failed to pause.";
+  return ok
+    ? `Paused - ${s.songInfo.title} by ${s.songInfo.artist}`
+    : "Failed to pause.";
 }
 
 export function resumePlayback(guildId: string): string {
@@ -48,7 +54,9 @@ export function resumePlayback(guildId: string): string {
   if (!s) return "Nothing is queued.";
   if (s.player.state.status !== AudioPlayerStatus.Paused) return "Not paused.";
   const ok = s.player.unpause();
-  return ok ? "Resumed." : "Failed to resume.";
+  return ok
+    ? `Playing - ${s.songInfo.title} by ${s.songInfo.artist}`
+    : "Failed to resume.";
 }
 
 export function removePlayback(guildId: string) {
@@ -138,7 +146,12 @@ export async function playSongFromYoutube(
     });
 
     const player = createAudioPlayer();
-    sessions.set(i.guildId!, { player, guildId: i.guildId!, connection });
+    sessions.set(i.guildId!, {
+      player,
+      guildId: i.guildId!,
+      connection,
+      songInfo: { title: song.title, artist: song.artist },
+    });
     connection.subscribe(player);
     player.play(resource);
 

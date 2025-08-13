@@ -26,7 +26,6 @@ async function execute(
 
 export const command: SlashCommand = {
   cooldown: 20,
-  kind: "chat",
   data: new SlashCommandBuilder()
     .setName("vibe")
     .setDescription(

@@ -8,7 +8,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { logger } from "../helpers/logger.js";
 import type { Dirent } from "node:fs";
-import { DiscordCommand } from "../@types/commands.js";
+import { SlashCommand } from "../@types/commands.js";
 import dotenv from "dotenv";
 
 dotenv.config({ path: ".env" });
@@ -51,9 +51,9 @@ for (const folder of commandFolders) {
     const fileUrl: string = pathToFileURL(filePath).href;
 
     const mod = await import(fileUrl);
-    const command: DiscordCommand = mod.command;
+    const command: SlashCommand = mod.command;
     if (command && "data" in command && "execute" in command) {
-      if (command.kind === "chat") slashCommands.push(command.data.toJSON());
+      slashCommands.push(command.data.toJSON());
     } else {
       logger.warn(
         `[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`,

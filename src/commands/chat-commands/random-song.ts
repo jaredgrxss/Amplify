@@ -64,7 +64,6 @@ async function execute(
 
 export const command: SlashCommand = {
   cooldown: 15,
-  kind: "chat",
   data: new SlashCommandBuilder()
     .setName("random")
     .setDescription(
