@@ -1,16 +1,10 @@
-import {
-  SlashCommandBuilder,
-  ChatInputCommandInteraction,
-  ButtonBuilder,
-  ButtonStyle,
-  ActionRowBuilder,
-  MessageActionRowComponentBuilder,
-} from "discord.js";
+import { SlashCommandBuilder, ChatInputCommandInteraction } from "discord.js";
 import type { SlashCommand } from "../../@types/commands.js";
 import { logger } from "../../helpers/logger.js";
 import { getSongByGenre } from "../../helpers/open-ai.js";
 import { SongPick } from "../../@types/open-ai.js";
-import { playSongFromYoutube } from "../../helpers/playback.js";
+import { playSong } from "../../helpers/playback.js";
+import { buildPlaybackComponents } from "../../helpers/components.js";
 
 async function execute(
   interaction: ChatInputCommandInteraction,
@@ -24,35 +18,11 @@ async function execute(
     const randomIndex = Math.floor(Math.random() * songs.length);
     const pickedSong = songs[randomIndex]!;
 
-    const playResult = await playSongFromYoutube(interaction, pickedSong);
+    const playResult = await playSong(interaction, pickedSong);
 
-    const play = new ButtonBuilder()
-      .setCustomId("play")
-      .setLabel("Play")
-      .setStyle(ButtonStyle.Primary)
-      .setDisabled(true);
-
-    const pause = new ButtonBuilder()
-      .setCustomId("pause")
-      .setLabel("Pause")
-      .setStyle(ButtonStyle.Secondary)
-      .setDisabled(false);
-
-    const remove = new ButtonBuilder()
-      .setCustomId("remove")
-      .setLabel("Remove")
-      .setStyle(ButtonStyle.Danger)
-      .setDisabled(false);
-
-    const row =
-      new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
-        remove,
-        pause,
-        play,
-      );
     await interaction.editReply({
       content: playResult,
-      components: [row],
+      components: buildPlaybackComponents(true),
     });
   } catch (err) {
     logger.error(`Error in execute function for command [RANDOM]: ${err}`);
