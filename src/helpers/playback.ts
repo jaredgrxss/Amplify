@@ -172,7 +172,7 @@ function endSession(guildId: string) {
 
 export async function playSong(
   i: ChatInputCommandInteraction,
-  song: SongPick,
+  song: SongPick
 ): Promise<string> {
   try {
     // before starting a new command, let's make sure
@@ -194,7 +194,7 @@ export async function playSong(
     const player = createAudioPlayerAndAttachResources(
       i,
       [{ song, resource }],
-      connection,
+      connection
     );
 
     await entersState(player, AudioPlayerStatus.Playing, 10_000);
@@ -211,7 +211,7 @@ export async function playSong(
 
 export async function playPlaylist(
   i: ChatInputCommandInteraction,
-  songs: SongPick[],
+  songs: SongPick[]
 ): Promise<string> {
   // before starting a new command, let's make sure
   // no existing songs are in the session (may need more logic later)
@@ -239,7 +239,7 @@ export async function playPlaylist(
     const player = createAudioPlayerAndAttachResources(
       i,
       resources,
-      connection,
+      connection
     );
     await entersState(player, AudioPlayerStatus.Playing, 10_000);
     const first = resources[0]!.song;
@@ -255,7 +255,7 @@ export async function playPlaylist(
 }
 
 function checkVoicePermissions(
-  i: ChatInputCommandInteraction,
+  i: ChatInputCommandInteraction
 ): VoiceBasedChannel {
   const member: GuildMember = i.member as GuildMember;
   const voiceChannel: VoiceBasedChannel | null = member.voice.channel;
@@ -275,7 +275,7 @@ function checkVoicePermissions(
 }
 
 async function establishVoiceConnection(
-  voiceChannel: VoiceBasedChannel,
+  voiceChannel: VoiceBasedChannel
 ): Promise<VoiceConnection> {
   const connection = joinVoiceChannel({
     channelId: voiceChannel.id,
@@ -314,7 +314,7 @@ async function downloadAndExtractStream(url: string) {
 function createAudioPlayerAndAttachResources(
   i: ChatInputCommandInteraction,
   resources: SongData[],
-  connection: VoiceConnection,
+  connection: VoiceConnection
 ): AudioPlayer {
   const player = createAudioPlayer();
   const session: PlaybackSession = {
@@ -368,7 +368,7 @@ async function getYoutubeUrls(songs: SongPick[]): Promise<string[]> {
 
 async function downloadStreams(
   pairs: { song: SongPick; url: string }[],
-  concurrency = 6,
+  concurrency = 6
 ): Promise<SongData[]> {
   if (pairs.length === 0) return [];
 
@@ -394,4 +394,14 @@ async function downloadStreams(
 
   await Promise.all(Array.from({ length: CONCURRENCY }, () => worker()));
   return results.filter((r): r is SongData => r !== null);
+}
+
+export function getQueueSnapshot(guildId: string): SongPick[] {
+  const s = sessions.get(guildId);
+  return s ? s.songQueue.map((x) => x.song) : [];
+}
+
+export function getNowPlaying(guildId: string): SongPick | undefined {
+  const s = sessions.get(guildId);
+  return s?.songQueue[0]?.song;
 }
