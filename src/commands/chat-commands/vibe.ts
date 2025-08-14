@@ -3,7 +3,8 @@ import type { SlashCommand } from "../../@types/commands.js";
 import { logger } from "../../helpers/logger.js";
 import { getPlaylistsByVibe } from "../../helpers/open-ai.js";
 import { SongPick } from "../../@types/open-ai.js";
-// import { playSongFromYoutube } from "../../helpers/playback.js";
+import { playPlaylist } from "../../helpers/playback.js";
+import { buildVibeComponents } from "../../helpers/components.js";
 
 async function execute(
   interaction: ChatInputCommandInteraction,
@@ -13,9 +14,13 @@ async function execute(
     const songs: SongPick[] = await getPlaylistsByVibe(
       interaction.options.getString("vibe")!,
     );
-    logger.info(
-      `The songs we picked are ${songs.map((song) => song.title).join(", ")}`,
-    );
+
+    const msg = await playPlaylist(interaction, songs);
+
+    await interaction.editReply({
+      content: msg,
+      components: buildVibeComponents(),
+    });
   } catch (err) {
     logger.error(`Error in execute function for command [VIBE]: ${err}`);
     await interaction.editReply({

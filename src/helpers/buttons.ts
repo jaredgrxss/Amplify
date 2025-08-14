@@ -3,6 +3,9 @@ import {
   pausePlayback,
   resumePlayback,
   removePlayback,
+  nextPlayback,
+  prevPlayback,
+  shufflePlayback,
 } from "../helpers/playback.js";
 
 export async function handleButtonInteraction(
@@ -18,6 +21,15 @@ export async function handleButtonInteraction(
       break;
     case "pause":
       await handlePauseButton(interaction);
+      break;
+    case "previous":
+      await handlePrevButton(interaction);
+      break;
+    case "next":
+      await handleNextButton(interaction);
+      break;
+    case "shuffle":
+      await handleShuffleButton(interaction);
       break;
   }
 }
@@ -98,4 +110,19 @@ async function handlePauseButton(interaction: ButtonInteraction<CacheType>) {
       },
     ],
   });
+}
+
+async function handleNextButton(interaction: ButtonInteraction<CacheType>) {
+  const msg = nextPlayback(interaction.guildId!);
+  console.log(msg);
+}
+
+async function handlePrevButton(interaction: ButtonInteraction<CacheType>) {
+  const msg = prevPlayback(interaction.guildId!);
+  console.log(msg);
+}
+
+async function handleShuffleButton(interaction: ButtonInteraction<CacheType>) {
+  const msg = shufflePlayback(interaction.guildId!);
+  console.log(msg);
 }
