@@ -4,7 +4,7 @@ import { logger } from "../../helpers/logger.js";
 import { getSongByGenre } from "../../helpers/open-ai.js";
 import { SongPick } from "../../@types/open-ai.js";
 import { playSong } from "../../helpers/playback.js";
-import { buildRandomComponents } from "../../helpers/components.js";
+import { buildPlaybackComponents } from "../../helpers/components.js";
 
 async function execute(
   interaction: ChatInputCommandInteraction,
@@ -22,7 +22,7 @@ async function execute(
 
     await interaction.editReply({
       content: playResult,
-      components: buildRandomComponents(),
+      components: buildPlaybackComponents(true),
     });
   } catch (err) {
     logger.error(`Error in execute function for command [RANDOM]: ${err}`);

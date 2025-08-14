@@ -71,7 +71,8 @@ export function removePlayback(guildId: string) {
     logger.error(`Error in remove playback actions: ${err}.`);
   }
   try {
-    s.connection.destroy();
+    if (s.connection.state.status !== VoiceConnectionStatus.Destroyed)
+      s.connection.destroy();
   } catch (err) {
     logger.error(`Error in remove playback actions: ${err}.`);
   }
@@ -79,16 +80,82 @@ export function removePlayback(guildId: string) {
   return "Playback removed and disconnected.";
 }
 
-export function nextPlayback(guildId: string) {
-  return guildId;
+export function nextPlayback(guildId: string): string {
+  const s = sessions.get(guildId);
+  if (!s) return "Nothing is queued.";
+  if (s.songQueue.length < 2)
+    return `Queue unchanged - **${s.songQueue[0]!.song.title}** is still playing.`;
+
+  const first = s.songQueue.shift()!;
+  s.songQueue.push(first);
+  const current = s.songQueue[0]!;
+  let ok = true;
+
+  try {
+    s.player.stop(true);
+    s.player.play(current.resource);
+    s.player.unpause();
+  } catch {
+    ok = false;
+  }
+
+  return ok
+    ? `Playing - **${s.songQueue[0]?.song.title}** by ${s.songQueue[0]?.song.artist} (${s.songQueue[0]?.song.year})`
+    : `Error in playing next song`;
 }
 
-export function prevPlayback(guildId: string) {
-  return guildId;
+export function prevPlayback(guildId: string): string {
+  const s = sessions.get(guildId);
+  if (!s) return "Nothing is queued.";
+  if (s.songQueue.length < 2)
+    return `Queue unchanged - **${s.songQueue[0]!.song.title}** is still playing.`;
+
+  const last = s.songQueue.pop()!;
+  s.songQueue.unshift(last);
+  const current = s.songQueue[0]!;
+  let ok = true;
+  try {
+    s.player.stop(true);
+    s.player.play(current.resource);
+    s.player.unpause();
+  } catch {
+    ok = false;
+  }
+  return ok
+    ? `Playing - **${s.songQueue[0]?.song.title}** by ${s.songQueue[0]?.song.artist} (${s.songQueue[0]?.song.year})`
+    : `Error in playing previous song`;
 }
 
 export function shufflePlayback(guildId: string) {
-  return guildId;
+  const s = sessions.get(guildId);
+  if (!s) return "Nothing is queued.";
+  const len = s.songQueue.length;
+  if (len < 2)
+    return `Queue unchanged - **${s.songQueue[0]!.song.title}** is still playing.`;
+
+  let k = Math.floor(Math.random() * (len - 1)) + 1;
+
+  k = ((k % len) + len) % len;
+  if (k === 0) {
+    return `Queue unchanged - **${s.songQueue[0]!.song.title}** is still playing.`;
+  }
+
+  const moved = s.songQueue.splice(0, k);
+  s.songQueue.push(...moved);
+  const current = s.songQueue[0]!;
+  let ok = true;
+
+  try {
+    s.player.stop(true);
+    s.player.play(current.resource);
+    s.player.unpause();
+  } catch {
+    ok = false;
+  }
+
+  return ok
+    ? `Playing - **${current.song.title}** by ${current.song.artist} (${current.song.year})`
+    : "Error while shuffling playback.";
 }
 
 function endSession(guildId: string) {
@@ -110,7 +177,7 @@ export async function playSong(
   try {
     // before starting a new command, let's make sure
     // no existing songs are in the session (may need more logic later to expand)
-    sessions.clear();
+    sessions.delete(i.guildId!);
     const voiceChannel: VoiceBasedChannel = checkVoicePermissions(i);
 
     const url = (await getYoutubeUrls([song]))[0];
@@ -149,17 +216,34 @@ export async function playPlaylist(
   // before starting a new command, let's make sure
   // no existing songs are in the session (may need more logic later)
   try {
-    sessions.clear();
+    sessions.delete(i.guildId!);
     const voiceChannel: VoiceBasedChannel = checkVoicePermissions(i);
-    logger.info(voiceChannel);
-    const urls: string[] = await getYoutubeUrls(songs);
-    let cnt = 0;
-    urls.map((url) => {
-      if (url !== null) cnt++;
-    });
-    logger.info(`We found ${cnt} valid urls`);
 
-    return `Now playing: **${songs[0]?.title}** by ${songs[0]?.artist}`;
+    const urls: string[] = await getYoutubeUrls(songs);
+    const pairs = songs.flatMap((song, idx) => {
+      const url = urls[idx];
+      return url ? [{ song, url }] : [];
+    });
+
+    if (pairs.length === 0) return "No playable tracks were found.";
+
+    const connection = await establishVoiceConnection(voiceChannel);
+
+    const resources = await downloadStreams(pairs, 8);
+
+    if (resources.length === 0) {
+      connection.destroy();
+      return "Failed to prepare audio resources.";
+    }
+
+    const player = createAudioPlayerAndAttachResources(
+      i,
+      resources,
+      connection,
+    );
+    await entersState(player, AudioPlayerStatus.Playing, 10_000);
+    const first = resources[0]!.song;
+    return `Now playing: **${first.title}** by ${first.artist} (${first.year})`;
   } catch (err) {
     logger.error(`Error in playing a song: ${err}`);
     if (err instanceof Error) {
@@ -244,9 +328,9 @@ function createAudioPlayerAndAttachResources(
   connection.subscribe(player);
   player.play(session.songQueue[0]!.resource);
 
-  player.on(AudioPlayerStatus.Idle, () => {
-    endSession(i.guildId!);
-  });
+  // player.on(AudioPlayerStatus.Idle, () => {
+  // endSession(i.guildId!);
+  // });
 
   player.on("error", (error) => {
     logger.error(`Audio player error: ${error.message}`);
@@ -282,4 +366,32 @@ async function getYoutubeUrls(songs: SongPick[]): Promise<string[]> {
   return results.filter((u): u is string => Boolean(u));
 }
 
-export async function downloadStreams() {}
+async function downloadStreams(
+  pairs: { song: SongPick; url: string }[],
+  concurrency = 6,
+): Promise<SongData[]> {
+  if (pairs.length === 0) return [];
+
+  const CONCURRENCY = Math.max(1, Math.min(concurrency, pairs.length));
+  const results: (SongData | null)[] = new Array(pairs.length).fill(null);
+
+  let next = 0;
+  const worker = async () => {
+    while (true) {
+      const idx = next++;
+      if (idx >= pairs.length) break;
+      const { song, url } = pairs[idx]!;
+      try {
+        const { stream, type } = await downloadAndExtractStream(url);
+        const resource = createAudioResource(stream, { inputType: type });
+        results[idx] = { song, resource };
+      } catch (err) {
+        logger.error(`Failed to prepare stream for "${song.title}" - ${err}`);
+        results[idx] = null;
+      }
+    }
+  };
+
+  await Promise.all(Array.from({ length: CONCURRENCY }, () => worker()));
+  return results.filter((r): r is SongData => r !== null);
+}

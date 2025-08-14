@@ -4,7 +4,7 @@ import { logger } from "../../helpers/logger.js";
 import { getPlaylistsByVibe } from "../../helpers/open-ai.js";
 import { SongPick } from "../../@types/open-ai.js";
 import { playPlaylist } from "../../helpers/playback.js";
-import { buildVibeComponents } from "../../helpers/components.js";
+import { buildPlaybackComponents } from "../../helpers/components.js";
 
 async function execute(
   interaction: ChatInputCommandInteraction,
@@ -19,7 +19,7 @@ async function execute(
 
     await interaction.editReply({
       content: msg,
-      components: buildVibeComponents(),
+      components: buildPlaybackComponents(true),
     });
   } catch (err) {
     logger.error(`Error in execute function for command [VIBE]: ${err}`);

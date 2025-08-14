@@ -5,18 +5,20 @@ import {
   MessageActionRowComponentBuilder,
 } from "discord.js";
 
-export function buildVibeComponents(): ActionRowBuilder<MessageActionRowComponentBuilder>[] {
+export function buildPlaybackComponents(
+  playing: boolean,
+): ActionRowBuilder<MessageActionRowComponentBuilder>[] {
   const play = new ButtonBuilder()
     .setCustomId("play")
     .setLabel("Play")
     .setStyle(ButtonStyle.Primary)
-    .setDisabled(true);
+    .setDisabled(playing); // disabled while playing
 
   const pause = new ButtonBuilder()
     .setCustomId("pause")
     .setLabel("Pause")
     .setStyle(ButtonStyle.Secondary)
-    .setDisabled(false);
+    .setDisabled(!playing); // disabled while paused
 
   const remove = new ButtonBuilder()
     .setCustomId("remove")
@@ -24,23 +26,23 @@ export function buildVibeComponents(): ActionRowBuilder<MessageActionRowComponen
     .setStyle(ButtonStyle.Danger)
     .setDisabled(false);
 
-  const next = new ButtonBuilder()
+  const previous = new ButtonBuilder()
     .setCustomId("previous")
     .setLabel("Previous")
     .setStyle(ButtonStyle.Success)
-    .setDisabled(true);
+    .setDisabled(false);
 
-  const previous = new ButtonBuilder()
+  const next = new ButtonBuilder()
     .setCustomId("next")
     .setLabel("Next")
     .setStyle(ButtonStyle.Success)
-    .setDisabled(true);
+    .setDisabled(false);
 
   const shuffle = new ButtonBuilder()
     .setCustomId("shuffle")
     .setLabel("Shuffle")
     .setStyle(ButtonStyle.Success)
-    .setDisabled(true);
+    .setDisabled(false);
 
   const row1 =
     new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
@@ -51,37 +53,10 @@ export function buildVibeComponents(): ActionRowBuilder<MessageActionRowComponen
 
   const row2 =
     new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
-      next,
       previous,
+      next,
       shuffle,
     );
+
   return [row1, row2];
-}
-
-export function buildRandomComponents(): ActionRowBuilder<MessageActionRowComponentBuilder>[] {
-  const play = new ButtonBuilder()
-    .setCustomId("play")
-    .setLabel("Play")
-    .setStyle(ButtonStyle.Primary)
-    .setDisabled(true);
-
-  const pause = new ButtonBuilder()
-    .setCustomId("pause")
-    .setLabel("Pause")
-    .setStyle(ButtonStyle.Secondary)
-    .setDisabled(false);
-
-  const remove = new ButtonBuilder()
-    .setCustomId("remove")
-    .setLabel("Remove")
-    .setStyle(ButtonStyle.Danger)
-    .setDisabled(false);
-
-  const row =
-    new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
-      remove,
-      pause,
-      play,
-    );
-  return [row];
 }
