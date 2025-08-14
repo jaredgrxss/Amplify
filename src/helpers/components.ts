@@ -6,7 +6,7 @@ import {
 } from "discord.js";
 
 export function buildPlaybackComponents(
-  playing: boolean,
+  playing: boolean
 ): ActionRowBuilder<MessageActionRowComponentBuilder>[] {
   const play = new ButtonBuilder()
     .setCustomId("play")
@@ -44,11 +44,17 @@ export function buildPlaybackComponents(
     .setStyle(ButtonStyle.Success)
     .setDisabled(false);
 
+  const save = new ButtonBuilder()
+    .setCustomId("save_spotify")
+    .setLabel("Save to Spotify")
+    .setStyle(ButtonStyle.Success)
+    .setDisabled(false);
+
   const row1 =
     new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
       remove,
       pause,
-      play,
+      play
     );
 
   const row2 =
@@ -56,6 +62,7 @@ export function buildPlaybackComponents(
       previous,
       next,
       shuffle,
+      save
     );
 
   return [row1, row2];
