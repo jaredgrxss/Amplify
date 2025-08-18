@@ -48,10 +48,10 @@ export async function saveToUsersSpotify(
 
     if (songs.length <= 1) return saveSingleTrack(interaction.guildId!, token);
 
-    return saveMultiTrack(interaction.guildId!, token, songs);
-  } catch (err) {
+    return saveMultiTrack(token, songs);
+  } catch {
     return {
-      msg: "An error occured while attempting to save to spotify",
+      msg: "An error occurred while attempting to save to spotify",
       components: [],
     };
   }
@@ -60,25 +60,75 @@ export async function saveToUsersSpotify(
 async function getUserAccessToken(user_id: string): Promise<string | null> {
   const token = userTokens.get(user_id);
   if (!token) return null;
-  if (Date.now() < token.expiresAt) return "";
-  return null;
+  if (Date.now() < token.expiresAt) return token.accessToken;
+  return await refreshToken(user_id);
+}
+
+async function refreshToken(user_id: string): Promise<string | null> {
+  const token = userTokens.get(user_id);
+  if (!token) return null;
+
+  const res = await fetch("https://accounts.spotify.com/api/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "refresh_token",
+      refresh_token: token.refreshToken,
+      client_id: process.env.SPOTIFY_CLIENT_ID!,
+      client_secret: process.env.SPOTIFY_CLIENT_SECRET!,
+    }).toString(),
+  });
+  if (!res.ok) return null;
+
+  const json = (await res.json()) as {
+    access_token: string;
+    expires_in: number;
+  };
+  token.accessToken = json.access_token;
+  token.expiresAt = Date.now() + json.expires_in * 1000 - 60_000;
+  userTokens.set(user_id, token);
+  return token.accessToken;
 }
 
 function getSpotifyAuthUrl(user_id: string): string {
   const params = new URLSearchParams({
     client_id: process.env.SPOTIFY_CLIENT_ID!,
-    reponse_type: "code",
+    response_type: "code",
     redirect_uri: process.env.REDIRECT_URI!,
-    scopes: SCOPES,
+    scope: SCOPES,
     state: user_id,
   });
   return `https://accounts.spotify.com/authorize?${params}`;
 }
 
-async function resolveSongsToTrackIds(token: string, songs: SongPick[]) {
-  return {
-    ids: [],
-  };
+async function resolveSongsToTrackIds(
+  token: string,
+  songs: SongPick[]
+): Promise<{ ids: string[]; uris: string[] }> {
+  const results = await Promise.all(songs.map((s) => searchTrack(token, s)));
+  const ids = results.flatMap((r) => (r?.id ? [r.id] : []));
+  const uris = results.flatMap((r) => (r?.uri ? [r.uri] : []));
+  return { ids, uris };
+}
+
+async function searchTrack(
+  token: string,
+  s: SongPick
+): Promise<{ id: string; uri: string } | null> {
+  const q = `${s.title} artist:${s.artist}`;
+  const res = await fetch(
+    `https://api.spotify.com/v1/search?${new URLSearchParams({
+      q,
+      type: "track",
+      limit: "1",
+      market: "US",
+    })}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!res.ok) return null;
+  const data = await res.json();
+  const t = data?.tracks?.items?.[0];
+  return t ? { id: t.id, uri: t.uri } : null;
 }
 
 export async function exchangeCodeForToken(code: string) {
@@ -89,7 +139,7 @@ export async function exchangeCodeForToken(code: string) {
       grant_type: "authorization_code",
       code,
       redirect_uri: process.env.REDIRECT_URI!,
-      client_id: process.env.SPTOFIY_CLIENT_ID!,
+      client_id: process.env.SPOTIFY_CLIENT_ID!,
       client_secret: process.env.SPOTIFY_CLIENT_SECRET!,
     }).toString(),
   });
@@ -118,7 +168,18 @@ export function storeUserToken(
   });
 }
 
-async function addToLiked(token: string, ids: string[]) {}
+async function addToLiked(token: string, ids: string[]): Promise<void> {
+  const res = await fetch("https://api.spotify.com/v1/me/tracks", {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ ids }),
+  });
+  if (!res.ok)
+    throw new Error(`Add to liked failed: ${res.status} ${await res.text()}`);
+}
 
 async function saveSingleTrack(
   guildId: string,
@@ -146,12 +207,89 @@ async function saveSingleTrack(
 }
 
 async function saveMultiTrack(
-  guildId: string,
   token: string,
   songs: SongPick[]
 ): Promise<SpotifySave> {
+  const { uris } = await resolveSongsToTrackIds(token, songs);
+  if (!uris.length) {
+    return {
+      msg: "No matching tracks found on Spotify",
+      components: [],
+    };
+  }
+  const name = uniquePlaylistName();
+  const link = await createPlaylistAndAdd(token, name, uris);
+  const playlistButton = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setStyle(ButtonStyle.Link)
+      .setLabel("View Your New Playlist!")
+      .setURL(link)
+  );
   return {
-    msg: "Fix",
-    components: [],
+    msg: `Created playlist "${name}" and added ${uris.length} tracks.`,
+    components: [playlistButton],
   };
+}
+
+function uniquePlaylistName(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const ts = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const rand = Math.random().toString(36).slice(2, 6);
+  return `Amplify Playlist — ${ts} • ${rand}`;
+}
+
+async function createPlaylistAndAdd(
+  token: string,
+  name: string,
+  uris: string[]
+): Promise<string> {
+  const user = await meProfile(token);
+  const res = await fetch(
+    `https://api.spotify.com/v1/users/${user.id}/playlists`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name,
+        description: "Created by Amplify",
+        public: false,
+      }),
+    }
+  );
+  if (!res.ok)
+    throw new Error(
+      `Create playlist failed: ${res.status} ${await res.text()}`
+    );
+  const playlist = await res.json();
+  const add = await fetch(
+    `https://api.spotify.com/v1/playlists/${playlist.id}/tracks`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ uris }),
+    }
+  );
+  if (!add.ok)
+    throw new Error(`Add tracks failed: ${add.status} ${await add.text()}`);
+  return (
+    playlist.external_urls?.spotify ??
+    `https://open.spotify.com/playlist/${playlist.id}`
+  );
+}
+
+async function meProfile(
+  token: string
+): Promise<{ id: string; display_name?: string }> {
+  const res = await fetch("https://api.spotify.com/v1/me", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return await res.json();
 }

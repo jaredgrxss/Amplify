@@ -36,15 +36,15 @@ export async function handleButtonInteraction(
       components = buildPlaybackComponents(false);
       break;
     case "previous":
-      msg = prevPlayback(interaction.guildId!);
+      msg = await prevPlayback(interaction.guildId!);
       components = buildPlaybackComponents(true);
       break;
     case "next":
-      msg = nextPlayback(interaction.guildId!);
+      msg = await nextPlayback(interaction.guildId!);
       components = buildPlaybackComponents(true);
       break;
     case "shuffle":
-      msg = shufflePlayback(interaction.guildId!);
+      msg = await shufflePlayback(interaction.guildId!);
       components = buildPlaybackComponents(true);
       break;
     case "save_spotify":

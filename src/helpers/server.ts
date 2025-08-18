@@ -21,7 +21,7 @@ export function startAuthServer(port = Number(process.env.PORT ?? 3000)) {
         expires_in: token.expires_in,
       });
       res.send(
-        "Spotify linked! You can close this window and return to Discord."
+        "Spotify linked! You can close this window and return to discord now to finish saving your playlist."
       );
     } catch (err) {
       if (err instanceof Error) {
@@ -32,6 +32,6 @@ export function startAuthServer(port = Number(process.env.PORT ?? 3000)) {
     }
   });
   app.listen(port, () => {
-    logger.info(`[auth] Listening on http:/127.0.0.1:${port}`);
+    logger.info(`Spotify callback server listening on http://127.0.0.1:${port}`);
   });
 }
