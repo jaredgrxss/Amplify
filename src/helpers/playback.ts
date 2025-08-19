@@ -26,11 +26,13 @@ interface PlaybackSession {
   songQueue: SongData[];
   guildId: string;
   connection: VoiceConnection;
+  suppressNextIdle?: boolean;
 }
 
 interface SongData {
   song: SongPick;
-  resource: AudioResource;
+  url: string;
+  resource?: AudioResource | undefined;
 }
 
 const sessions = new Map<string, PlaybackSession>();
@@ -80,23 +82,25 @@ export function removePlayback(guildId: string) {
   return "Playback removed and disconnected.";
 }
 
-export function nextPlayback(guildId: string): string {
+export async function nextPlayback(guildId: string): Promise<string> {
   const s = sessions.get(guildId);
   if (!s) return "Nothing is queued.";
   if (s.songQueue.length < 2)
     return `Queue unchanged - **${s.songQueue[0]!.song.title}** is still playing.`;
 
-  const first = s.songQueue.shift()!;
-  s.songQueue.push(first);
+  const previous = s.songQueue.shift()!;
+  s.songQueue.push(previous);
   const current = s.songQueue[0]!;
   let ok = true;
-
   try {
+    s.suppressNextIdle = true;
     s.player.stop(true);
-    s.player.play(current.resource);
-    s.player.unpause();
-  } catch {
+    previous.resource = undefined;
+    const res = await ensureResource(current);
+    s.player.play(res);
+  } catch (err) {
     ok = false;
+    logger.error(`Error in next playback: ${err}`);
   }
 
   return ok
@@ -104,7 +108,7 @@ export function nextPlayback(guildId: string): string {
     : `Error in playing next song`;
 }
 
-export function prevPlayback(guildId: string): string {
+export async function prevPlayback(guildId: string): Promise<string> {
   const s = sessions.get(guildId);
   if (!s) return "Nothing is queued.";
   if (s.songQueue.length < 2)
@@ -115,10 +119,13 @@ export function prevPlayback(guildId: string): string {
   const current = s.songQueue[0]!;
   let ok = true;
   try {
+    s.suppressNextIdle = true;
     s.player.stop(true);
-    s.player.play(current.resource);
-    s.player.unpause();
-  } catch {
+    s.songQueue[1]!.resource = undefined;
+    const res = await ensureResource(current);
+    s.player.play(res);
+  } catch (err) {
+    logger.error(`Error in previous playback: ${err}`);
     ok = false;
   }
   return ok
@@ -126,7 +133,7 @@ export function prevPlayback(guildId: string): string {
     : `Error in playing previous song`;
 }
 
-export function shufflePlayback(guildId: string) {
+export async function shufflePlayback(guildId: string): Promise<string> {
   const s = sessions.get(guildId);
   if (!s) return "Nothing is queued.";
   const len = s.songQueue.length;
@@ -140,16 +147,20 @@ export function shufflePlayback(guildId: string) {
     return `Queue unchanged - **${s.songQueue[0]!.song.title}** is still playing.`;
   }
 
+  const previous = s.songQueue[0];
   const moved = s.songQueue.splice(0, k);
   s.songQueue.push(...moved);
   const current = s.songQueue[0]!;
   let ok = true;
 
   try {
+    s.suppressNextIdle = true;
     s.player.stop(true);
-    s.player.play(current.resource);
-    s.player.unpause();
-  } catch {
+    previous!.resource = undefined;
+    const res = await ensureResource(current);
+    s.player.play(res);
+  } catch (err) {
+    logger.error(`Error in shuffle playback: ${err}`);
     ok = false;
   }
 
@@ -170,9 +181,16 @@ function endSession(guildId: string) {
   sessions.delete(guildId);
 }
 
+async function ensureResource(item: SongData) {
+  if (item.resource) return item.resource;
+  const { stream, type } = await downloadAndExtractStream(item.url);
+  item.resource = createAudioResource(stream, { inputType: type });
+  return item.resource;
+}
+
 export async function playSong(
   i: ChatInputCommandInteraction,
-  song: SongPick,
+  song: SongPick
 ): Promise<string> {
   try {
     // before starting a new command, let's make sure
@@ -191,10 +209,10 @@ export async function playSong(
       inputType: type,
     });
 
-    const player = createAudioPlayerAndAttachResources(
+    const player = await createAudioPlayerAndAttachResources(
       i,
-      [{ song, resource }],
-      connection,
+      [{ song, url, resource }],
+      connection
     );
 
     await entersState(player, AudioPlayerStatus.Playing, 10_000);
@@ -211,7 +229,7 @@ export async function playSong(
 
 export async function playPlaylist(
   i: ChatInputCommandInteraction,
-  songs: SongPick[],
+  songs: SongPick[]
 ): Promise<string> {
   // before starting a new command, let's make sure
   // no existing songs are in the session (may need more logic later)
@@ -236,10 +254,10 @@ export async function playPlaylist(
       return "Failed to prepare audio resources.";
     }
 
-    const player = createAudioPlayerAndAttachResources(
+    const player = await createAudioPlayerAndAttachResources(
       i,
       resources,
-      connection,
+      connection
     );
     await entersState(player, AudioPlayerStatus.Playing, 10_000);
     const first = resources[0]!.song;
@@ -255,7 +273,7 @@ export async function playPlaylist(
 }
 
 function checkVoicePermissions(
-  i: ChatInputCommandInteraction,
+  i: ChatInputCommandInteraction
 ): VoiceBasedChannel {
   const member: GuildMember = i.member as GuildMember;
   const voiceChannel: VoiceBasedChannel | null = member.voice.channel;
@@ -275,7 +293,7 @@ function checkVoicePermissions(
 }
 
 async function establishVoiceConnection(
-  voiceChannel: VoiceBasedChannel,
+  voiceChannel: VoiceBasedChannel
 ): Promise<VoiceConnection> {
   const connection = joinVoiceChannel({
     channelId: voiceChannel.id,
@@ -311,26 +329,34 @@ async function downloadAndExtractStream(url: string) {
   return { stream, type };
 }
 
-function createAudioPlayerAndAttachResources(
+async function createAudioPlayerAndAttachResources(
   i: ChatInputCommandInteraction,
   resources: SongData[],
-  connection: VoiceConnection,
-): AudioPlayer {
+  connection: VoiceConnection
+): Promise<AudioPlayer> {
   const player = createAudioPlayer();
   const session: PlaybackSession = {
     player,
     guildId: i.guildId!,
     songQueue: resources,
     connection,
+    suppressNextIdle: false,
   };
 
   sessions.set(i.guildId!, session);
   connection.subscribe(player);
-  player.play(session.songQueue[0]!.resource);
+  const res = await ensureResource(session.songQueue[0]!);
+  player.play(res);
 
-  // player.on(AudioPlayerStatus.Idle, () => {
-  // endSession(i.guildId!);
-  // });
+  player.on(AudioPlayerStatus.Idle, async () => {
+    const s = sessions.get(i.guildId!);
+    if (!s) return;
+    if (s.suppressNextIdle) {
+      s.suppressNextIdle = false; // using this when manually playing next song
+      return;
+    }
+    await nextPlayback(i.guildId!);
+  });
 
   player.on("error", (error) => {
     logger.error(`Audio player error: ${error.message}`);
@@ -368,7 +394,7 @@ async function getYoutubeUrls(songs: SongPick[]): Promise<string[]> {
 
 async function downloadStreams(
   pairs: { song: SongPick; url: string }[],
-  concurrency = 6,
+  concurrency = 6
 ): Promise<SongData[]> {
   if (pairs.length === 0) return [];
 
@@ -384,7 +410,7 @@ async function downloadStreams(
       try {
         const { stream, type } = await downloadAndExtractStream(url);
         const resource = createAudioResource(stream, { inputType: type });
-        results[idx] = { song, resource };
+        results[idx] = { song, resource, url };
       } catch (err) {
         logger.error(`Failed to prepare stream for "${song.title}" - ${err}`);
         results[idx] = null;
@@ -394,4 +420,14 @@ async function downloadStreams(
 
   await Promise.all(Array.from({ length: CONCURRENCY }, () => worker()));
   return results.filter((r): r is SongData => r !== null);
+}
+
+export function getQueueSnapshot(guildId: string): SongPick[] {
+  const s = sessions.get(guildId);
+  return s ? s.songQueue.map((x) => x.song) : [];
+}
+
+export function getNowPlaying(guildId: string): SongPick | undefined {
+  const s = sessions.get(guildId);
+  return s?.songQueue[0]?.song;
 }

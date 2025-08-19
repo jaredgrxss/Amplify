@@ -3,6 +3,7 @@ import {
   ButtonInteraction,
   CacheType,
   MessageActionRowComponentBuilder,
+  MessageFlags,
 } from "discord.js";
 import {
   pausePlayback,
@@ -13,9 +14,10 @@ import {
   shufflePlayback,
 } from "../helpers/playback.js";
 import { buildPlaybackComponents } from "./components.js";
+import { saveToUsersSpotify } from "./spotify.js";
 
 export async function handleButtonInteraction(
-  interaction: ButtonInteraction<CacheType>,
+  interaction: ButtonInteraction<CacheType>
 ) {
   if (!interaction.guildId) return;
   let msg = "";
@@ -34,17 +36,25 @@ export async function handleButtonInteraction(
       components = buildPlaybackComponents(false);
       break;
     case "previous":
-      msg = prevPlayback(interaction.guildId!);
+      msg = await prevPlayback(interaction.guildId!);
       components = buildPlaybackComponents(true);
       break;
     case "next":
-      msg = nextPlayback(interaction.guildId!);
+      msg = await nextPlayback(interaction.guildId!);
       components = buildPlaybackComponents(true);
       break;
     case "shuffle":
-      msg = shufflePlayback(interaction.guildId!);
+      msg = await shufflePlayback(interaction.guildId!);
       components = buildPlaybackComponents(true);
       break;
+    case "save_spotify":
+      ({ msg, components } = await saveToUsersSpotify(interaction));
+      await interaction.reply({
+        content: msg,
+        components: components,
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
   }
   await interaction.update({
     content: msg,

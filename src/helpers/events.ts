@@ -24,5 +24,5 @@ export async function attachEventListeners(client: Client) {
       client.once(event.name, (...args) => event.execute(...args));
     else client.on(event.name, (...args) => event.execute(...args));
   }
-  logger.info("Successfully attached event listeners to Amplify client!");
+  logger.info("Attached event listeners to Amplify client!");
 }

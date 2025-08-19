@@ -49,17 +49,17 @@ export async function attachCommandHandlers(client: Client): Promise<void> {
         client.commands.set(command.data.name, command);
       } else {
         logger.warn(
-          `[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`,
+          `[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`
         );
       }
     }
   }
-  logger.info("Successfully attached command handlers to Amplify client!");
+  logger.info("Attached command handlers to Amplify client!");
 }
 
 export function commandOnCooldown(
   command: SlashCommand,
-  interaction: Interaction<CacheType>,
+  interaction: Interaction<CacheType>
 ): number {
   const cooldowns = interaction.client.cooldowns;
   if (!cooldowns.has(command.data.name)) {
@@ -82,7 +82,7 @@ export function commandOnCooldown(
 }
 
 export async function handleCommandInteraction(
-  interaction: ChatInputCommandInteraction<CacheType>,
+  interaction: ChatInputCommandInteraction<CacheType>
 ) {
   const command = interaction.client.commands.get(interaction.commandName);
   if (!command) {

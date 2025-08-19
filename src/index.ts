@@ -3,26 +3,27 @@ import { Client, GatewayIntentBits } from "discord.js";
 import { logger } from "./helpers/logger.js";
 import { attachCommandHandlers } from "./helpers/commands.js";
 import { attachEventListeners } from "./helpers/events.js";
-import { execSync } from "node:child_process";
+import { startAuthServer } from "./helpers/server.js";
+import { decryptEnvs, encryptEnvs } from "./helpers/envs.js";
 
 try {
-  execSync(
-    `gpg --quiet --batch --yes --passphrase="${process.env.ENV_PASSPHRASE}" --output .env --decrypt .env.gpg`,
-  );
-} catch {
-  logger.error(
-    "Unable to decrypt env file for Amplify. Please specify the passphrase via ENV_PASSPHRASE=XXX",
-  );
+  if (process.env.ENCRYPT === "true") {
+    encryptEnvs();
+    logger.info("Encrypted local env file into secure gpg format");
+  }
+  decryptEnvs();
+} catch (err) {
+  logger.error(`Error in encrypt / decrypt process for envs: ${err}`);
   process.exit(0);
 }
 
-dotenv.config({ path: ".env" });
+dotenv.config({ path: ".env", debug: false });
 
-logger.info("Successfully loaded .envs into the process!");
+logger.info("Loaded .envs into the process!");
 
 if (!process.env.DISCORD_TOKEN) {
   logger.error(
-    "DISCORD_TOKEN environment variable not set. This is required to run Amplify successfully",
+    "DISCORD_TOKEN environment variable not set. This is required to run Amplify successfully"
   );
   process.exit(0);
 }
@@ -33,6 +34,7 @@ try {
   });
   await attachCommandHandlers(client);
   await attachEventListeners(client);
+  startAuthServer(3000);
   client.login(process.env.DISCORD_TOKEN);
 } catch (err) {
   logger.error(`Error with Amplify: ${err}`);
