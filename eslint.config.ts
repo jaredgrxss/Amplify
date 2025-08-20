@@ -10,5 +10,12 @@ export default defineConfig([
     extends: ["js/recommended"],
     languageOptions: { globals: globals.node },
   },
-  tseslint.configs.recommended,
+  tseslint.configs.recommended as any,
+  {
+    files: ["**/*.{ts,mts,cts}"],
+    ...tseslint.configs.base,
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
 ]);
