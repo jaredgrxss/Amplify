@@ -169,18 +169,6 @@ export async function shufflePlayback(guildId: string): Promise<string> {
     : "Error while shuffling playback.";
 }
 
-function endSession(guildId: string) {
-  const s = sessions.get(guildId);
-  if (!s) return;
-  try {
-    s.connection.destroy();
-  } catch {
-    sessions.delete(guildId);
-    return;
-  }
-  sessions.delete(guildId);
-}
-
 async function ensureResource(item: SongData) {
   if (item.resource) return item.resource;
   const { stream, type } = await downloadAndExtractStream(item.url);
@@ -360,8 +348,8 @@ async function createAudioPlayerAndAttachResources(
 
   player.on("error", (error) => {
     logger.error(`Audio player error: ${error.message}`);
-    endSession(i.guildId!);
   });
+
   return player;
 }
 
